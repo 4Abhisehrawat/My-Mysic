@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#F50057"
+    tools:context=".ui.home.MusicPlayerActivity">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:id="@+id/song_title"
+        android:text="Title of the song"
+        android:singleLine="true"
+        android:ellipsize="marquee"
+        android:textColor="@color/white"
+        android:textSize="20dp"
+        android:layout_margin="40dp"
+        android:padding="20dp"
+        />
+
+    <ImageView
+        android:layout_width="240dp"
+        android:layout_height="240dp"
+        android:id="@+id/music_icon_big"
+        android:layout_centerHorizontal="true"
+        android:padding="0dp"
+        android:layout_below="@+id/song_title"
+        android:src="@drawable/music_icon"/>
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:id="@+id/controls"
+        android:padding="40dp">
+
+        <SeekBar
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:id="@+id/seek_bar"
+            android:layout_margin="10dp"
+            android:backgroundTint="@color/white"/>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/current_time"
+            android:layout_below="@id/seek_bar"
+            android:text="0:00"
+            android:layout_alignParentStart="true"
+            android:textColor="@color/white"
+            android:layout_margin="3dp"/>
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/seek_bar"
+            android:id="@+id/total_time"
+            android:text="0:00"
+            android:layout_alignParentEnd="true"
+            android:textColor="@color/white"
+            android:layout_margin="3dp"/>
+
+        <RelativeLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/total_time"
+            android:padding="20dp">
+
+            <ImageView
+                android:id="@+id/previous"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentStart="true"
+                android:layout_alignParentTop="true"
+                android:layout_centerVertical="true"
+                android:layout_marginStart="60dp"
+                android:layout_marginTop="21dp"
+                android:src="@drawable/previous" />
+
+            <ImageView
+                android:id="@+id/next"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentEnd="true"
+                android:layout_marginTop="10dp"
+                android:layout_marginEnd="60dp"
+                android:src="@drawable/next" />
+
+            <ImageView
+                android:id="@+id/pause_play"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerInParent="true"
+                android:src="@drawable/pause" />
+
+            <!-- Repeat One -->
+            <ImageView
+                android:id="@+id/RepeatMode"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_marginStart="0dp"
+                android:layout_marginTop="4dp"
+                android:src="@drawable/repeat1"/>
+
+
+            <ImageView
+                android:id="@+id/list"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_alignParentEnd="true"
+                android:layout_marginEnd="0dp"
+                android:layout_marginTop="0dp"
+                android:src="@drawable/list" />
+
+        </RelativeLayout>
+
+    </RelativeLayout>
+
+</RelativeLayout>
