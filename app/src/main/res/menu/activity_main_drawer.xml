@@ -17,6 +17,10 @@
             android:title="@string/signin"
             android:icon="@drawable/user"/>
         <item
+            android:id="@+id/refresh"
+            android:title="@string/refresh_drive_songs"
+            android:icon="@drawable/refresh"/>
+        <item
             android:id="@+id/logout"
             android:title="@string/logout"
             android:icon="@drawable/logout"/>

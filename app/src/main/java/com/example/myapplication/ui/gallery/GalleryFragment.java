@@ -15,6 +15,7 @@ import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.bumptech.glide.Glide;
 import com.example.myapplication.MainActivity;
 import com.example.myapplication.OnAccountSignInListener;
 import com.example.myapplication.R;
@@ -27,14 +28,14 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-
-public class GalleryFragment extends Fragment implements OnAccountSignInListener {
-    private static final String TAG = "GalleryFragment";
-    private ImageButton accountDetailsButton;
-    private Drive driveService;
+public class GalleryFragment extends Fragment {
     private RecyclerView recyclerView;
     private TextView noSongsText;
     private AudioFilesAdapter adapter;
+    private String username;
+    private String email;
+    private String photoUrl;
+    private ImageButton accountDetailsButton;
 
 
     @Override
@@ -45,79 +46,24 @@ public class GalleryFragment extends Fragment implements OnAccountSignInListener
         noSongsText = view.findViewById(R.id.no_songs_text2);
         accountDetailsButton = view.findViewById(R.id.accountDetailsButton);
 
+
         recyclerView.setLayoutManager(new LinearLayoutManager(requireContext()));
         adapter = new AudioFilesAdapter();
         recyclerView.setAdapter(adapter);
 
         accountDetailsButton.setOnClickListener(signInButtonview -> showAccountDetailsPopup(accountDetailsButton));
 
-        // Access signed-in account from MainActivity
-        GoogleSignInAccount signedInAccount = ((MainActivity) requireActivity()).getSignedInAccount();
-        onAccountSignIn(signedInAccount);  // Handle the account in the fragment
+        // Access signed-in account details from MainActivity
+        MainActivity mainActivity = (MainActivity) requireActivity();
+        username = mainActivity.getSignedInUsername();
+        email = mainActivity.getSignedInEmail();
+        photoUrl=mainActivity.getSignedInPhoto();
+
+        loadImageWithGlide(photoUrl, accountDetailsButton);
+        // Initialize and set data to the adapter, or perform any other fragment-specific logic
 
         return view;
     }
-
-    public void setDriveService(Drive driveService) {
-        this.driveService = driveService;
-        listFiles();
-    }
-
-    private void listFiles() {
-        try {
-            FileList result = driveService.files().list()
-                    .setQ("mimeType='audio/*'")
-                    .setSpaces("drive")
-                    .execute();
-
-            List<File> files = result.getFiles();
-            List<AudioFile> audioFiles = new ArrayList<>();
-
-            if (files != null && !files.isEmpty()) {
-                for (File file : files) {
-                    String fileName = file.getName();
-                    String fileId = file.getId();
-                    audioFiles.add(new AudioFile(fileName, fileId));
-                }
-            }
-
-            if (audioFiles.isEmpty()) {
-                recyclerView.setVisibility(View.GONE);
-                noSongsText.setVisibility(View.VISIBLE);
-            } else {
-                recyclerView.setVisibility(View.VISIBLE);
-                noSongsText.setVisibility(View.GONE);
-                adapter.setAudioFiles(audioFiles);
-            }
-        } catch (IOException e) {
-            Log.e(TAG, "Error querying files: " + e.getMessage());
-        }
-    }
-
-    @Override
-    public void onAccountSignIn(GoogleSignInAccount account) {
-        // Handle the signed-in account in the fragment
-        if (account != null) {
-            // Update UI or perform actions specific to this fragment when an account is signed in
-            // For example, you can access account.getEmail(), account.getDisplayName(), etc.
-            // ...
-
-            // Show account details in a toast (you can replace this with your UI logic)
-            String accountDetails = "User: " + account.getDisplayName() + "\nEmail: " + account.getEmail();
-            Toast.makeText(requireContext(), accountDetails, Toast.LENGTH_SHORT).show();
-
-            // After signing in, you may want to list files from Drive
-            if (driveService != null) {
-                listFiles();
-            }
-        }
-        else{
-            String Failed_Text="Signin Failed";
-            Toast.makeText(requireContext(), Failed_Text, Toast.LENGTH_SHORT).show();
-        }
-    }
-
-
 
     private void showAccountDetailsPopup(View anchorView) {
         PopupMenu popupMenu = new PopupMenu(requireContext(), anchorView);
@@ -125,18 +71,22 @@ public class GalleryFragment extends Fragment implements OnAccountSignInListener
 
         Menu menu = popupMenu.getMenu();
 
-        // Check if the user is signed in
-        GoogleSignInAccount signedInAccount = ((MainActivity) requireActivity()).getSignedInAccount();
-        if (signedInAccount != null) {
-            // If signed in, update the titles with user information
-            menu.findItem(R.id.menu_user_name).setTitle(signedInAccount.getDisplayName());
-            menu.findItem(R.id.menu_user_email).setTitle(signedInAccount.getEmail());
-        } else {
-            // If not signed in, use default titles
-            menu.findItem(R.id.menu_user_name).setTitle("Default User");
-            menu.findItem(R.id.menu_user_email).setTitle("defaultuser@gmail.com");
-        }
+        menu.findItem(R.id.menu_user_name).setTitle(username);
+        menu.findItem(R.id.menu_user_email).setTitle(email);
+
 
         popupMenu.show();
     }
+
+    private void loadImageWithGlide(String imageUrl, ImageButton accountDetailsButton) {
+        // Implement your logic to load the image using Glide
+        // Replace R.drawable.default_user_image with the default image resource
+        Glide.with(requireContext())
+                .load(imageUrl)
+                .placeholder(R.drawable.user)
+                .error(R.drawable.user)
+                .into(accountDetailsButton);
+    }
+
+    // You can include other methods or logic specific to the GalleryFragment
 }

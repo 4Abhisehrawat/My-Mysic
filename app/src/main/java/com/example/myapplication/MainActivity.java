@@ -3,23 +3,27 @@ package com.example.myapplication;
 import static android.content.ContentValues.TAG;
 
 import android.content.Intent;
-import android.database.Cursor;
 import android.media.MediaPlayer;
 import android.os.Bundle;
-import android.os.Handler;
-import android.provider.MediaStore;
 import android.util.Log;
 import android.view.MenuItem;
 import android.view.View;
-import android.view.Menu;
-import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.drawerlayout.widget.DrawerLayout;
+import androidx.navigation.NavController;
+import androidx.navigation.Navigation;
+import androidx.navigation.ui.AppBarConfiguration;
+import androidx.navigation.ui.NavigationUI;
+import androidx.recyclerview.widget.RecyclerView;
+
 import com.bumptech.glide.Glide;
-import com.example.myapplication.ui.gallery.AudioFile;
-import com.example.myapplication.ui.gallery.GalleryFragment;
+import com.example.myapplication.databinding.ActivityMainBinding;
 import com.example.myapplication.ui.home.AudioModel;
 import com.example.myapplication.ui.home.MusicPlayerActivity;
 import com.example.myapplication.ui.home.MyMediaPlayer;
@@ -30,33 +34,18 @@ import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
 import com.google.android.gms.common.api.ApiException;
 import com.google.android.gms.common.api.Scope;
 import com.google.android.gms.tasks.Task;
-import com.google.android.material.snackbar.Snackbar;
 import com.google.android.material.navigation.NavigationView;
-
-import androidx.activity.result.ActivityResultLauncher;
-import androidx.activity.result.contract.ActivityResultContracts;
-import androidx.fragment.app.Fragment;
-import androidx.navigation.NavController;
-import androidx.navigation.Navigation;
-import androidx.navigation.ui.AppBarConfiguration;
-import androidx.navigation.ui.NavigationUI;
-import androidx.drawerlayout.widget.DrawerLayout;
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.recyclerview.widget.RecyclerView;
-
-import com.example.myapplication.databinding.ActivityMainBinding;
 import com.google.api.client.googleapis.extensions.android.gms.auth.GoogleAccountCredential;
 import com.google.api.services.drive.Drive;
 import com.google.api.services.drive.DriveScopes;
 import com.google.api.services.drive.model.FileList;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-public class MainActivity extends AppCompatActivity implements OnAccountSignInListener {
+public class MainActivity extends AppCompatActivity  {
 
     private AppBarConfiguration mAppBarConfiguration;
     private static final int RC_SIGN_IN = 123;
@@ -65,8 +54,10 @@ public class MainActivity extends AppCompatActivity implements OnAccountSignInLi
     private GoogleSignInClient googleSignInClient;
     private ActivityResultLauncher<Intent> signInLauncher;
     private ActivityMainBinding binding;
-    private GoogleSignInAccount signedInAccount;
     ArrayList<AudioModel> songsList = new ArrayList<>();
+    private String displayName;
+    private String email;
+    private String photoUrl;
 
     RecyclerView recyclerView;
 
@@ -102,6 +93,7 @@ public class MainActivity extends AppCompatActivity implements OnAccountSignInLi
                         Toast.makeText(this, "Sign-in failed. Please try again.", Toast.LENGTH_SHORT).show();
                     }
                 }
+
         );
 
         setSupportActionBar(binding.appBarMain.toolbar);
@@ -123,6 +115,11 @@ public class MainActivity extends AppCompatActivity implements OnAccountSignInLi
             logout();
             return true;
         });
+        MenuItem refreshDriveSongs = navigationView.getMenu().findItem(R.id.refresh);
+        refreshDriveSongs.setOnMenuItemClickListener(MenuItem ->{
+           refreshSongsList();
+           return true;
+        });
         // Passing each menu ID as a set of Ids because each
         // menu should be considered as top level destinations.
         mAppBarConfiguration = new AppBarConfiguration.Builder(
@@ -132,6 +129,9 @@ public class MainActivity extends AppCompatActivity implements OnAccountSignInLi
         NavController navController = Navigation.findNavController(this, R.id.nav_host_fragment_content_main);
         NavigationUI.setupActionBarWithNavController(this, navController, mAppBarConfiguration);
         NavigationUI.setupWithNavController(navigationView, navController);
+
+        fetchLatestSongs();
+
     }
 
     private void logout() {
@@ -165,25 +165,8 @@ public class MainActivity extends AppCompatActivity implements OnAccountSignInLi
         }
     }
 
-    public void onAccountSignIn(GoogleSignInAccount account) {
-        // Store the signed-in account
-        signedInAccount = account;
-
-        // Pass the signed-in account to the fragments
-        // You can iterate through the attached fragments and call the method
-        Fragment fragment = getSupportFragmentManager().findFragmentById(R.id.nav_host_fragment_content_main);
-        if (fragment instanceof OnAccountSignInListener) {
-            ((OnAccountSignInListener) fragment).onAccountSignIn(account);
-        }
-    }
 
 
-    public GoogleSignInAccount getSignedInAccount() {
-        // Implement the method to return the signed-in account
-        // This might involve interacting with your GoogleSignInClient
-        // ...
-        return signedInAccount;  // Replace with your actual implementation
-    }
 
     private void updateUIAfterRevoke() {
         // Assuming binding is a class-level variable
@@ -235,11 +218,55 @@ public class MainActivity extends AppCompatActivity implements OnAccountSignInLi
                 .setApplicationName("MyMusic")
                 .build();
 
-        // Pass the DriveService to the GalleryFragment if it exists
-        if (getSupportFragmentManager().findFragmentById(R.id.nav_host_fragment_content_main) instanceof GalleryFragment) {
-            ((GalleryFragment) getSupportFragmentManager().findFragmentById(R.id.nav_host_fragment_content_main))
-                    .setDriveService(driveService);
+    }
+    private void fetchLatestSongs() {
+        // Fetch the latest songs from the device
+        if (driveService != null) {
+            try {
+                FileList driveFiles = driveService.files().list().execute();
+                List<AudioModel> driveAudioModels = convertDriveFilesToAudioModel(driveFiles.getFiles());
+
+                // Add the Drive songs to the songsList
+                songsList.addAll(driveAudioModels);
+
+                // Notify the adapter that the data has changed
+                recyclerView.getAdapter().notifyDataSetChanged();
+
+                // Display the number of songs fetched in a Toast message
+                int numberOfSongsFetched = driveAudioModels.size();
+                String toastMessage = numberOfSongsFetched + " songs fetched.";
+                Toast.makeText(this, toastMessage, Toast.LENGTH_SHORT).show();
+            } catch (IOException e) {
+                e.printStackTrace();
+                Toast.makeText(this, "Error fetching songs. Please try again.", Toast.LENGTH_SHORT).show();
+            }
         }
+    }
+
+
+    // Existing methods and code...
+
+    private List<AudioModel> convertDriveFilesToAudioModel(List<com.google.api.services.drive.model.File> driveFiles) {
+        List<AudioModel> audioModels = new ArrayList<>();
+        for (com.google.api.services.drive.model.File driveFile : driveFiles) {
+            // Convert each Drive file to your AudioModel class
+            AudioModel audioModel = new AudioModel(driveFile.getId(), driveFile.getName(), null); // Add necessary attributes
+            audioModels.add(audioModel);
+        }
+        return audioModels;
+    }
+
+
+    public String getSignedInUsername() {
+        return displayName;
+    }
+
+    public String getSignedInEmail() {
+        return email;
+    }
+
+    public String getSignedInPhoto() {
+        return photoUrl;
     }
 
     private void handleSignInResult(Task<GoogleSignInAccount> completedTask) {
@@ -258,9 +285,9 @@ public class MainActivity extends AppCompatActivity implements OnAccountSignInLi
             // User is signed in, you can perform actions here
 
             // Example: Get user details
-            String displayName = account.getDisplayName();
-            String email = account.getEmail();
-            String photoUrl = account.getPhotoUrl() != null ? account.getPhotoUrl().toString() : "";
+            displayName = account.getDisplayName();
+            email = account.getEmail();
+            photoUrl = account.getPhotoUrl() != null ? account.getPhotoUrl().toString() : "";
 
             // Update username and email in the header
             View headerView = binding.navView.getHeaderView(0);
@@ -291,16 +318,16 @@ public class MainActivity extends AppCompatActivity implements OnAccountSignInLi
     }
 
 
-    private void openMusicPlayerActivity()  {
-            // Music is playing, open MusicPlayerActivity
-            Intent intent = new Intent(MainActivity.this, MusicPlayerActivity.class);
+    private void openMusicPlayerActivity() {
+        // Music is playing, open MusicPlayerActivity
+        Intent intent = new Intent(MainActivity.this, MusicPlayerActivity.class);
 
-            // Pass the current 'songsList' to MusicPlayerActivity
-            intent.putExtra("LIST", MusicPlayerActivity.getCurrentSongsList());
+        // Pass the current 'songsList' to MusicPlayerActivity
+        intent.putExtra("LIST", songsList);
 
-            startActivity(intent);
-
+        startActivity(intent);
     }
+
     private void showFab() {
         // Make the FAB visible
         binding.appBarMain.fab.setVisibility(View.VISIBLE);
@@ -314,32 +341,25 @@ public class MainActivity extends AppCompatActivity implements OnAccountSignInLi
     }
 
     private void refreshSongsList() {
-        // Clear the current songs list
-        songsList.clear();
+        if (driveService != null) {
+            try {
+                FileList driveFiles = driveService.files().list().execute();
+                List<AudioModel> driveAudioModels = convertDriveFilesToAudioModel(driveFiles.getFiles());
 
-        // Fetch the latest songs from the device
-        fetchLatestSongs();
+                // Clear the current songs list
+                songsList.clear();
 
-        // Notify the adapter that the data has changed
-        recyclerView.getAdapter().notifyDataSetChanged();
-    }
+                // Add the Drive songs to the songsList
+                songsList.addAll(driveAudioModels);
 
-    private void fetchLatestSongs() {
-        // Fetch the latest songs from the device
-        String[] projection = {
-                MediaStore.Audio.Media.TITLE,
-                MediaStore.Audio.Media.DATA,
-                MediaStore.Audio.Media.DURATION
-        };
-
-        String selection = MediaStore.Audio.Media.IS_MUSIC + " !=0";
-
-        Cursor cursor = getContentResolver().query(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, projection, selection, null, null);
-        while (cursor.moveToNext()) {
-            AudioModel songData = new AudioModel(cursor.getString(1), cursor.getString(0), cursor.getString(2));
-            if (new File(songData.getPath()).exists()) {
-                songsList.add(songData);
+                // Notify the adapter that the data has changed
+                recyclerView.getAdapter().notifyDataSetChanged();
+            } catch (IOException e) {
+                e.printStackTrace();
+                Toast.makeText(this, "Error refreshing songs list. Please try again.", Toast.LENGTH_SHORT).show();
             }
         }
     }
+
+
 }
