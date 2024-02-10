@@ -4,6 +4,7 @@ import static android.content.ContentValues.TAG;
 
 import android.content.Intent;
 import android.media.MediaPlayer;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.MenuItem;
@@ -44,7 +45,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 public class MainActivity extends AppCompatActivity  {
 
     private AppBarConfiguration mAppBarConfiguration;
@@ -75,6 +77,18 @@ public class MainActivity extends AppCompatActivity  {
                 .build();
 
         googleSignInClient = GoogleSignIn.getClient(this, gso);
+
+        googleSignInClient.silentSignIn()
+                .addOnCompleteListener(this, task -> {
+                    if (task.isSuccessful()) {
+                        // User is already signed in, proceed with initialization
+                        GoogleSignInAccount lastSignedInAccount = task.getResult();
+                        if (lastSignedInAccount != null) {
+                            initializeDriveService(lastSignedInAccount);
+                            updateUI(lastSignedInAccount);
+                        }
+                    }
+            });
 
         signInLauncher = registerForActivityResult(
                 new ActivityResultContracts.StartActivityForResult(),
@@ -220,28 +234,11 @@ public class MainActivity extends AppCompatActivity  {
 
     }
     private void fetchLatestSongs() {
-        // Fetch the latest songs from the device
-        if (driveService != null) {
-            try {
-                FileList driveFiles = driveService.files().list().execute();
-                List<AudioModel> driveAudioModels = convertDriveFilesToAudioModel(driveFiles.getFiles());
-
-                // Add the Drive songs to the songsList
-                songsList.addAll(driveAudioModels);
-
-                // Notify the adapter that the data has changed
-                recyclerView.getAdapter().notifyDataSetChanged();
-
-                // Display the number of songs fetched in a Toast message
-                int numberOfSongsFetched = driveAudioModels.size();
-                String toastMessage = numberOfSongsFetched + " songs fetched.";
-                Toast.makeText(this, toastMessage, Toast.LENGTH_SHORT).show();
-            } catch (IOException e) {
-                e.printStackTrace();
-                Toast.makeText(this, "Error fetching songs. Please try again.", Toast.LENGTH_SHORT).show();
-            }
-        }
+        // Fetch audio files from Google Drive
+        Executor executor = Executors.newSingleThreadExecutor();
+        executor.execute(new FetchDriveFilesTask());
     }
+
 
 
     // Existing methods and code...
@@ -341,25 +338,53 @@ public class MainActivity extends AppCompatActivity  {
     }
 
     private void refreshSongsList() {
-        if (driveService != null) {
-            try {
-                FileList driveFiles = driveService.files().list().execute();
-                List<AudioModel> driveAudioModels = convertDriveFilesToAudioModel(driveFiles.getFiles());
 
+        Toast.makeText(this, "Refreshing songs list...", Toast.LENGTH_SHORT).show();
+
+        fetchLatestSongs();
+
+    }
+
+    private class FetchDriveFilesTask implements Runnable {
+        @Override
+        public void run() {
+            List<AudioModel> result = new ArrayList<>();
+
+            // Fetch audio files from Google Drive
+            if (driveService != null) {
+                try {
+                    String folderId = "1TxatvZ-Z1CgE2-ndp0iVP7T7EAae0ncC";
+                    String mimeType = "audio/mpeg";
+
+                    FileList driveFiles = driveService.files().list()
+                            .setQ("'" + folderId + "' in parents and mimeType='" + mimeType + "'")
+                            .execute();
+
+                    result = convertDriveFilesToAudioModel(driveFiles.getFiles());
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+
+            List<AudioModel> finalResult = result;
+            runOnUiThread(() -> {
                 // Clear the current songs list
                 songsList.clear();
 
-                // Add the Drive songs to the songsList
-                songsList.addAll(driveAudioModels);
+                // Add the Drive audio files to the songsList
+                songsList.addAll(finalResult);
 
                 // Notify the adapter that the data has changed
-                recyclerView.getAdapter().notifyDataSetChanged();
-            } catch (IOException e) {
-                e.printStackTrace();
-                Toast.makeText(this, "Error refreshing songs list. Please try again.", Toast.LENGTH_SHORT).show();
-            }
+//                recyclerView.getAdapter().notifyDataSetChanged();
+
+                // Display the number of audio files fetched in a Toast message
+                int numberOfAudioFilesFetched = finalResult.size();
+                String toastMessage = numberOfAudioFilesFetched + " audio files fetched.";
+                Toast.makeText(MainActivity.this, toastMessage, Toast.LENGTH_SHORT).show();
+            });
         }
     }
+
 
 
 }
