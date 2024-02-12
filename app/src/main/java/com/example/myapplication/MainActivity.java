@@ -123,12 +123,27 @@ public class MainActivity extends AppCompatActivity  {
         NavigationView navigationView = binding.navView;
 
         MenuItem signInMenuItem = navigationView.getMenu().findItem(R.id.signIn);
+        MenuItem logoutMenuItem = navigationView.getMenu().findItem(R.id.logout);
+
+        // Check if the user is signed in or not
+        if (GoogleSignIn.getLastSignedInAccount(this) != null) {
+            // User is signed in, hide Sign In button, show Logout button
+            signInMenuItem.setVisible(false);
+            logoutMenuItem.setVisible(true);
+        } else {
+            // User is not signed in, show Sign In button, hide Logout button
+            signInMenuItem.setVisible(true);
+            logoutMenuItem.setVisible(false);
+        }
+
         signInMenuItem.setOnMenuItemClickListener(menuItem -> {
+            // Sign In button clicked
             signIn();
             return true;
         });
-        MenuItem logoutMenuItem = navigationView.getMenu().findItem(R.id.logout);
+
         logoutMenuItem.setOnMenuItemClickListener(menuItem -> {
+            // Logout button clicked
             logout();
             return true;
         });
@@ -159,6 +174,7 @@ public class MainActivity extends AppCompatActivity  {
                         if (task.isSuccessful()) {
                             // Revoke access if sign out was successful
                             revokeAccess();
+                            updateMenuItemsVisibility();
                         } else {
                             // Handle sign out failure
                             Toast.makeText(this, "Logout failed. Please try again.", Toast.LENGTH_SHORT).show();
@@ -177,6 +193,8 @@ public class MainActivity extends AppCompatActivity  {
                             // Handle access revocation result
                             if (account == null) {
                                 updateUIAfterRevoke();
+                                Toast.makeText(this, "Logout successful!", Toast.LENGTH_SHORT).show();
+
                             } else {
                                 // Access revocation failed
                                 Log.e(TAG, "Access revocation failed.", task.getException());
@@ -187,6 +205,23 @@ public class MainActivity extends AppCompatActivity  {
         } else {
             // No signed-in account, display a message or take appropriate action
             Toast.makeText(this, "No signed-in account to revoke access.", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private void updateMenuItemsVisibility() {
+        NavigationView navigationView = binding.navView;
+        MenuItem signInMenuItem = navigationView.getMenu().findItem(R.id.signIn);
+        MenuItem logoutMenuItem = navigationView.getMenu().findItem(R.id.logout);
+
+        // Check if the user is signed in or not
+        if (GoogleSignIn.getLastSignedInAccount(this) != null) {
+            // User is signed in, hide Sign In button, show Logout button
+            signInMenuItem.setVisible(false);
+            logoutMenuItem.setVisible(true);
+        } else {
+            // User is not signed in, show Sign In button, hide Logout button
+            signInMenuItem.setVisible(true);
+            logoutMenuItem.setVisible(false);
         }
     }
 
@@ -315,6 +350,8 @@ public class MainActivity extends AppCompatActivity  {
             // Example: Display user details in a toast
             String userInfo = "Welcome, " + displayName + "\nEmail: " + email + "\nPhoto URL: " + photoUrl;
             Toast.makeText(this, userInfo, Toast.LENGTH_LONG).show();
+
+            updateMenuItemsVisibility();
 
 //            // Example: Open another activity (replace YourNextActivity.class with the actual class)
 //            Intent intent = new Intent(this, YourNextActivity.class);
