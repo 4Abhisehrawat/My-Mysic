@@ -47,10 +47,13 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
+import com.google.api.services.drive.DriveScopes;
+
 public class MainActivity extends AppCompatActivity  {
 
     private AppBarConfiguration mAppBarConfiguration;
     private static final int RC_SIGN_IN = 123;
+    private static final int REQUEST_CODE_SIGN_IN = 456;
     private Drive driveService;
     MediaPlayer mediaPlayer = MyMediaPlayer.getInstance();
     private GoogleSignInClient googleSignInClient;
@@ -165,19 +168,28 @@ public class MainActivity extends AppCompatActivity  {
     }
 
     private void revokeAccess() {
-        if (googleSignInClient != null) {
-            googleSignInClient.revokeAccess()
-                    .addOnCompleteListener(this, task -> {
-                        // Handle access revocation result
-                        if (task.isSuccessful()) {
-                            updateUIAfterRevoke();
-                        } else {
-                            // Access revocation failed
-                            Toast.makeText(this, "Access revocation failed. Please try again.", Toast.LENGTH_SHORT).show();
-                        }
-                    });
+        GoogleSignInAccount account = GoogleSignIn.getLastSignedInAccount(this);
+//        if (account != null) {
+            // There is a signed-in account, proceed with revocation
+            if (googleSignInClient != null) {
+                googleSignInClient.revokeAccess()
+                        .addOnCompleteListener(this, task -> {
+                            // Handle access revocation result
+                            if (account == null) {
+                                updateUIAfterRevoke();
+                            } else {
+                                // Access revocation failed
+                                Log.e(TAG, "Access revocation failed.", task.getException());
+                                Toast.makeText(this, "Access revocation failed. Please try again.", Toast.LENGTH_SHORT).show();
+                            }
+                        });
+//            }
+        } else {
+            // No signed-in account, display a message or take appropriate action
+            Toast.makeText(this, "No signed-in account to revoke access.", Toast.LENGTH_SHORT).show();
         }
     }
+
 
 
 
