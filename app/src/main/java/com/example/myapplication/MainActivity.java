@@ -17,6 +17,7 @@ import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.drawerlayout.widget.DrawerLayout;
+import androidx.lifecycle.ViewModelProvider;
 import androidx.navigation.NavController;
 import androidx.navigation.Navigation;
 import androidx.navigation.ui.AppBarConfiguration;
@@ -63,8 +64,11 @@ public class MainActivity extends AppCompatActivity  {
     private String displayName;
     private String email;
     private String photoUrl;
+    private UserDetails userDetails = new UserDetails();
+    private UserViewModel userViewModel;
 
-    RecyclerView recyclerView;
+
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -152,6 +156,8 @@ public class MainActivity extends AppCompatActivity  {
            refreshSongsList();
            return true;
         });
+
+
         // Passing each menu ID as a set of Ids because each
         // menu should be considered as top level destinations.
         mAppBarConfiguration = new AppBarConfiguration.Builder(
@@ -241,6 +247,10 @@ public class MainActivity extends AppCompatActivity  {
             userNameTextView.setText(getString(R.string.user_name));
             emailTextView.setText(getString(R.string.user_email));
             userImage.setImageResource(R.drawable.user);
+            displayName = "Unknown";
+            email ="Unknown";
+            photoUrl = "";
+            updateUserdetails();
         }
     }
 
@@ -301,18 +311,6 @@ public class MainActivity extends AppCompatActivity  {
     }
 
 
-    public String getSignedInUsername() {
-        return displayName;
-    }
-
-    public String getSignedInEmail() {
-        return email;
-    }
-
-    public String getSignedInPhoto() {
-        return photoUrl;
-    }
-
     private void handleSignInResult(Task<GoogleSignInAccount> completedTask) {
         try {
             GoogleSignInAccount account = completedTask.getResult(ApiException.class);
@@ -324,6 +322,18 @@ public class MainActivity extends AppCompatActivity  {
         }
     }
 
+    private void updateUserdetails(){
+        userViewModel = new ViewModelProvider(this).get(UserViewModel.class);
+
+        // In the appropriate part of your code where you get user details
+        userDetails.setUsername(displayName);
+        userDetails.setEmail(email);
+        userDetails.setPhotoUrl(photoUrl);
+
+        // Set the user details in the UserViewModel
+        userViewModel.setUserDetails(userDetails);
+    }
+
     private void updateUI(GoogleSignInAccount account) {
         if (account != null) {
             // User is signed in, you can perform actions here
@@ -332,6 +342,8 @@ public class MainActivity extends AppCompatActivity  {
             displayName = account.getDisplayName();
             email = account.getEmail();
             photoUrl = account.getPhotoUrl() != null ? account.getPhotoUrl().toString() : "";
+
+            updateUserdetails();
 
             // Update username and email in the header
             View headerView = binding.navView.getHeaderView(0);
@@ -423,9 +435,6 @@ public class MainActivity extends AppCompatActivity  {
                 // Add the Drive audio files to the songsList
                 songsList.addAll(finalResult);
 
-                // Notify the adapter that the data has changed
-//                recyclerView.getAdapter().notifyDataSetChanged();
-
                 // Display the number of audio files fetched in a Toast message
                 int numberOfAudioFilesFetched = finalResult.size();
                 String toastMessage = numberOfAudioFilesFetched + " audio files fetched.";
@@ -433,6 +442,7 @@ public class MainActivity extends AppCompatActivity  {
             });
         }
     }
+
 
 
 

@@ -1,21 +1,25 @@
 package com.example.myapplication.ui.gallery;
 
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageButton;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.appcompat.widget.PopupMenu;
 import androidx.fragment.app.Fragment;
+import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
 import com.example.myapplication.MainActivity;
 import com.example.myapplication.R;
+import com.example.myapplication.UserViewModel;
 
 public class GalleryFragment extends Fragment {
     private RecyclerView recyclerView;
@@ -25,7 +29,7 @@ public class GalleryFragment extends Fragment {
     private String email;
     private String photoUrl;
     private ImageButton accountDetailsButton;
-
+    private UserViewModel userViewModel;
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
@@ -43,16 +47,24 @@ public class GalleryFragment extends Fragment {
         accountDetailsButton.setOnClickListener(signInButtonview -> showAccountDetailsPopup(accountDetailsButton));
 
         // Access signed-in account details from MainActivity
-        MainActivity mainActivity = (MainActivity) requireActivity();
-        username = mainActivity.getSignedInUsername();
-        email = mainActivity.getSignedInEmail();
-        photoUrl=mainActivity.getSignedInPhoto();
+        userViewModel = new ViewModelProvider(requireActivity()).get(UserViewModel.class);
 
-        loadImageWithGlide(photoUrl, accountDetailsButton);
+        // Observe changes to user details LiveData
+        userViewModel.getUserDetails().observe(getViewLifecycleOwner(), userDetails -> {
+            // Update UI with the new user details
+            if (userDetails != null) {
+                username = userDetails.getUsername();
+                email = userDetails.getEmail();
+                photoUrl = userDetails.getPhotoUrl();
+                loadImageWithGlide(photoUrl, accountDetailsButton);
+            }
+
+        });
         // Initialize and set data to the adapter, or perform any other fragment-specific logic
 
         return view;
     }
+
 
     private void showAccountDetailsPopup(View anchorView) {
         PopupMenu popupMenu = new PopupMenu(requireContext(), anchorView);
@@ -60,9 +72,8 @@ public class GalleryFragment extends Fragment {
 
         Menu menu = popupMenu.getMenu();
 
-        menu.findItem(R.id.menu_user_name).setTitle(username);
-        menu.findItem(R.id.menu_user_email).setTitle(email);
-
+        menu.findItem(R.id.menu_user_name).setTitle(username != null ? username : "Unknown");
+        menu.findItem(R.id.menu_user_email).setTitle(email != null ? email : "Unknown");
 
         popupMenu.show();
     }
