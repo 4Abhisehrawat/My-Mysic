@@ -26,6 +26,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
 import com.example.myapplication.databinding.ActivityMainBinding;
+import com.example.myapplication.ui.gallery.GalleryFragment;
 import com.example.myapplication.ui.home.AudioModel;
 import com.example.myapplication.ui.home.MusicPlayerActivity;
 import com.example.myapplication.ui.home.MyMediaPlayer;
@@ -366,7 +367,7 @@ public class MainActivity extends AppCompatActivity  {
             updateMenuItemsVisibility();
 
 //            // Example: Open another activity (replace YourNextActivity.class with the actual class)
-//            Intent intent = new Intent(this, YourNextActivity.class);
+//            Intent intent = new Intent(this, GalleryFragment.java);
 //            startActivity(intent);
 
             // Add any other actions you want to perform after successful sign-in

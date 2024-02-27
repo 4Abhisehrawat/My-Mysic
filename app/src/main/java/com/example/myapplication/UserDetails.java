@@ -27,4 +27,5 @@ public class UserDetails {
 
     public void setPhotoUrl(String photoUrl) {
         this.photoUrl = photoUrl;
-    }}
+    }
+}
