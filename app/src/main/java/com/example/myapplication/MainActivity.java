@@ -173,93 +173,7 @@ public class MainActivity extends AppCompatActivity  {
 
     }
 
-    private void logout() {
-        if (googleSignInClient != null) {
-            googleSignInClient.signOut()
-                    .addOnCompleteListener(this, task -> {
-                        // Handle sign out result
-                        if (task.isSuccessful()) {
-                            // Revoke access if sign out was successful
-                            revokeAccess();
-                            updateMenuItemsVisibility();
-                        } else {
-                            // Handle sign out failure
-                            Toast.makeText(this, "Logout failed. Please try again.", Toast.LENGTH_SHORT).show();
-                        }
-                    });
-        }
-    }
 
-    private void revokeAccess() {
-        GoogleSignInAccount account = GoogleSignIn.getLastSignedInAccount(this);
-//        if (account != null) {
-            // There is a signed-in account, proceed with revocation
-            if (googleSignInClient != null) {
-                googleSignInClient.revokeAccess()
-                        .addOnCompleteListener(this, task -> {
-                            // Handle access revocation result
-                            if (account == null) {
-                                updateUIAfterRevoke();
-                                Toast.makeText(this, "Logout successful!", Toast.LENGTH_SHORT).show();
-
-                            } else {
-                                // Access revocation failed
-                                Log.e(TAG, "Access revocation failed.", task.getException());
-                                Toast.makeText(this, "Access revocation failed. Please try again.", Toast.LENGTH_SHORT).show();
-                            }
-                        });
-//            }
-        } else {
-            // No signed-in account, display a message or take appropriate action
-            Toast.makeText(this, "No signed-in account to revoke access.", Toast.LENGTH_SHORT).show();
-        }
-    }
-
-    private void updateMenuItemsVisibility() {
-        NavigationView navigationView = binding.navView;
-        MenuItem signInMenuItem = navigationView.getMenu().findItem(R.id.signIn);
-        MenuItem logoutMenuItem = navigationView.getMenu().findItem(R.id.logout);
-
-        // Check if the user is signed in or not
-        if (GoogleSignIn.getLastSignedInAccount(this) != null) {
-            // User is signed in, hide Sign In button, show Logout button
-            signInMenuItem.setVisible(false);
-            logoutMenuItem.setVisible(true);
-        } else {
-            // User is not signed in, show Sign In button, hide Logout button
-            signInMenuItem.setVisible(true);
-            logoutMenuItem.setVisible(false);
-        }
-    }
-
-
-
-
-
-    private void updateUIAfterRevoke() {
-        // Assuming binding is a class-level variable
-        if (binding != null && binding.navView != null) {
-            View headerView = binding.navView.getHeaderView(0);
-            TextView userNameTextView = headerView.findViewById(R.id.user_name);
-            TextView emailTextView = headerView.findViewById(R.id.user_email);
-            ImageView userImage = headerView.findViewById(R.id.user_image);
-
-            // Set default values for username, email, and user image after access revocation
-            userNameTextView.setText(getString(R.string.user_name));
-            emailTextView.setText(getString(R.string.user_email));
-            userImage.setImageResource(R.drawable.user);
-            displayName = "Unknown";
-            email ="Unknown";
-            photoUrl = "";
-            updateUserdetails();
-        }
-    }
-
-
-    private void signIn() {
-        Intent signInIntent = googleSignInClient.getSignInIntent();
-        signInLauncher.launch(signInIntent);
-    }
 
     public Drive getDriveService() {
         return driveService;
@@ -291,28 +205,14 @@ public class MainActivity extends AppCompatActivity  {
                 .build();
 
     }
-    private void fetchLatestSongs() {
-        // Fetch audio files from Google Drive
-        Executor executor = Executors.newSingleThreadExecutor();
-        executor.execute(new FetchDriveFilesTask());
+
+
+    private void signIn() {
+        Intent signInIntent = googleSignInClient.getSignInIntent();
+        signInLauncher.launch(signInIntent);
     }
 
-
-
-    // Existing methods and code...
-
-    private List<AudioModel> convertDriveFilesToAudioModel(List<com.google.api.services.drive.model.File> driveFiles) {
-        List<AudioModel> audioModels = new ArrayList<>();
-        for (com.google.api.services.drive.model.File driveFile : driveFiles) {
-            // Convert each Drive file to your AudioModel class
-            AudioModel audioModel = new AudioModel(driveFile.getId(), driveFile.getName(), null); // Add necessary attributes
-            audioModels.add(audioModel);
-        }
-        return audioModels;
-    }
-
-
-    private void handleSignInResult(Task<GoogleSignInAccount> completedTask) {
+     private void handleSignInResult(Task<GoogleSignInAccount> completedTask) {
         try {
             GoogleSignInAccount account = completedTask.getResult(ApiException.class);
             // Signed in successfully, show authenticated UI.
@@ -320,6 +220,48 @@ public class MainActivity extends AppCompatActivity  {
         } catch (ApiException e) {
             Log.w(TAG, "signInResult:failed code=" + e.getStatusCode());
             Toast.makeText(this, "Sign-in failed. Please try again.", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private void logout() {
+        if (googleSignInClient != null) {
+            googleSignInClient.signOut()
+                    .addOnCompleteListener(this, task -> {
+                        // Handle sign out result
+                        if (task.isSuccessful()) {
+                            // Revoke access if sign out was successful
+                            revokeAccess();
+                            updateMenuItemsVisibility();
+                        } else {
+                            // Handle sign out failure
+                            Toast.makeText(this, "Logout failed. Please try again.", Toast.LENGTH_SHORT).show();
+                        }
+                    });
+        }
+    }
+
+    private void revokeAccess() {
+        GoogleSignInAccount account = GoogleSignIn.getLastSignedInAccount(this);
+//        if (account != null) {
+        // There is a signed-in account, proceed with revocation
+        if (googleSignInClient != null) {
+            googleSignInClient.revokeAccess()
+                    .addOnCompleteListener(this, task -> {
+                        // Handle access revocation result
+                        if (account == null) {
+                            updateUIAfterRevoke();
+                            Toast.makeText(this, "Logout successful!", Toast.LENGTH_SHORT).show();
+
+                        } else {
+                            // Access revocation failed
+                            Log.e(TAG, "Access revocation failed.", task.getException());
+                            Toast.makeText(this, "Access revocation failed. Please try again.", Toast.LENGTH_SHORT).show();
+                        }
+                    });
+//            }
+        } else {
+            // No signed-in account, display a message or take appropriate action
+            Toast.makeText(this, "No signed-in account to revoke access.", Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -333,6 +275,42 @@ public class MainActivity extends AppCompatActivity  {
 
         // Set the user details in the UserViewModel
         userViewModel.setUserDetails(userDetails);
+    }
+
+    private void updateMenuItemsVisibility() {
+        NavigationView navigationView = binding.navView;
+        MenuItem signInMenuItem = navigationView.getMenu().findItem(R.id.signIn);
+        MenuItem logoutMenuItem = navigationView.getMenu().findItem(R.id.logout);
+
+        // Check if the user is signed in or not
+        if (GoogleSignIn.getLastSignedInAccount(this) != null) {
+            // User is signed in, hide Sign In button, show Logout button
+            signInMenuItem.setVisible(false);
+            logoutMenuItem.setVisible(true);
+        } else {
+            // User is not signed in, show Sign In button, hide Logout button
+            signInMenuItem.setVisible(true);
+            logoutMenuItem.setVisible(false);
+        }
+    }
+
+    private void updateUIAfterRevoke() {
+        // Assuming binding is a class-level variable
+        if (binding != null && binding.navView != null) {
+            View headerView = binding.navView.getHeaderView(0);
+            TextView userNameTextView = headerView.findViewById(R.id.user_name);
+            TextView emailTextView = headerView.findViewById(R.id.user_email);
+            ImageView userImage = headerView.findViewById(R.id.user_image);
+
+            // Set default values for username, email, and user image after access revocation
+            userNameTextView.setText(getString(R.string.user_name));
+            emailTextView.setText(getString(R.string.user_email));
+            userImage.setImageResource(R.drawable.user);
+            displayName = "Unknown";
+            email ="Unknown";
+            photoUrl = "";
+            updateUserdetails();
+        }
     }
 
     private void updateUI(GoogleSignInAccount account) {
@@ -365,14 +343,6 @@ public class MainActivity extends AppCompatActivity  {
             Toast.makeText(this, userInfo, Toast.LENGTH_LONG).show();
 
             updateMenuItemsVisibility();
-
-//            // Example: Open another activity (replace YourNextActivity.class with the actual class)
-//            Intent intent = new Intent(this, GalleryFragment.java);
-//            startActivity(intent);
-
-            // Add any other actions you want to perform after successful sign-in
-        } else {
-            // User is signed out, update UI accordingly (if needed)
         }
     }
 
@@ -399,12 +369,28 @@ public class MainActivity extends AppCompatActivity  {
                 || super.onSupportNavigateUp();
     }
 
+    private void fetchLatestSongs() {
+        // Fetch audio files from Google Drive
+        Executor executor = Executors.newSingleThreadExecutor();
+        executor.execute(new FetchDriveFilesTask());
+    }
+
     private void refreshSongsList() {
 
         Toast.makeText(this, "Refreshing songs list...", Toast.LENGTH_SHORT).show();
 
         fetchLatestSongs();
 
+    }
+
+    private List<AudioModel> convertDriveFilesToAudioModel(List<com.google.api.services.drive.model.File> driveFiles) {
+        List<AudioModel> audioModels = new ArrayList<>();
+        for (com.google.api.services.drive.model.File driveFile : driveFiles) {
+            // Convert each Drive file to your AudioModel class
+            AudioModel audioModel = new AudioModel(driveFile.getId(), driveFile.getName(), null); // Add necessary attributes
+            audioModels.add(audioModel);
+        }
+        return audioModels;
     }
 
     private class FetchDriveFilesTask implements Runnable {
